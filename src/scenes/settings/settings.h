@@ -3,6 +3,7 @@
 
 #include <SFML/Graphics.h>
 #include "scenes/scenes.h"
+#include "slider/slider.h"
 
 extern ui_scenesManager* gSc_manager;
 extern sfFont* gFont;
@@ -11,6 +12,8 @@ extern unsigned int gUse_microphone;
 
 struct ui_scene_settings
 {
+  ui_slider* slider;
+
   sfText* mic_text;
   sfText* btn_text;
   sfRectangleShape* checkbox;

@@ -1,6 +1,5 @@
 #include "head.h"
 #include <stdlib.h>
-#include <stdio.h>
 
 static sfBool recorder_onProcess(const sfInt16* samples, size_t count, void* arg)
 {
@@ -11,21 +10,21 @@ static sfBool recorder_onProcess(const sfInt16* samples, size_t count, void* arg
   }
   avg_amp = avg_amp / count;
   
-#if defined (_WIN32)
-  volatile LONG* voice_detected = (volatile LONG*)arg;
-  InterlockedExchange(voice_detected, FALSE);
+  mic_thrd_data* data = (mic_thrd_data*)arg;
 
-  if (avg_amp > 100.0f)
+#if defined (_WIN32)
+  InterlockedExchange(&data->voice_detected, FALSE);
+
+  if (avg_amp > InterlockedCompareExchange(&data->threshold, 0, 0))
   {
-    InterlockedExchange(voice_detected, TRUE);
+    InterlockedExchange(&data->voice_detected, TRUE);
   }
 #else
-  atomic_uint* voice_detected = (atomic_uint*)arg;
-  atomic_store(voice_detected, 0);
+  atomic_store(&data->voice_detected, 0);
 
-  if (avg_amp > 100.0f)
+  if (avg_amp > atomic_load(&data->threshold))
   {
-    atomic_store(voice_detected, 1);
+    atomic_store(&data->voice_detected, 1);
   }
 #endif
 
@@ -58,9 +57,11 @@ bongo_head* bongo_head_create()
 
   head->is_txt_updated = 0;
 #if defined (_WIN32)
-  head->voice_detected = FALSE;
+  head->thrd_data.voice_detected = FALSE;
+  head->thrd_data.threshold = gThreshold;
 #else
-  head->voice_detected = ATOMIC_VAR_INIT(0);
+  head->thrd_data.voice_detected = ATOMIC_VAR_INIT(0);
+  head->thrd_data.threshold = ATOMIC_VAR_INIT(gThreshold);
 #endif
 
   head->recorder = NULL;
@@ -75,7 +76,7 @@ bongo_head* bongo_head_create()
       return NULL;
     }
 
-    head->recorder = sfSoundRecorder_create(NULL, recorder_onProcess, NULL, (void*)&head->voice_detected);
+    head->recorder = sfSoundRecorder_create(NULL, recorder_onProcess, NULL, (void*)&head->thrd_data);
     if (!head->recorder)
     {
       bongo_texture_destroy(head->texture_mic);
@@ -106,9 +107,9 @@ void bongo_head_update(bongo_head* head)
   }
 
 #if defined (_WIN32)
-  #define BONGO_VOICE_CONDITION (InterlockedCompareExchange(&head->voice_detected, 0, 0))
+  #define BONGO_VOICE_CONDITION (InterlockedCompareExchange(&head->thrd_data.voice_detected, 0, 0))
 #else
-  #define BONGO_VOICE_CONDITION (atomic_load(&head->voice_detected))
+  #define BONGO_VOICE_CONDITION (atomic_load(&head->thrd_data.voice_detected))
 #endif
   if (BONGO_VOICE_CONDITION)
   {

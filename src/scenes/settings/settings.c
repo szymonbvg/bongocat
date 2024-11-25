@@ -55,6 +55,18 @@ ui_scene_settings_t* ui_scene_settings_create()
     return NULL;
   }
 
+  data->slider = ui_slider_create();
+  if (!data->slider)
+  {
+    sfText_destroy(data->mic_text);
+    sfText_destroy(data->btn_text);
+    sfRectangleShape_destroy(data->checkbox);
+    sfRectangleShape_destroy(data->btn);
+    free(data);
+    free(scene);
+    return NULL;
+  }
+
   sfVector2u window_size = sfRenderWindow_getSize(gWindow);
   
   sfText_setFont(data->mic_text, gFont);
@@ -68,21 +80,21 @@ ui_scene_settings_t* ui_scene_settings_create()
   
   sfText_setPosition(data->mic_text, (sfVector2f) {
     (window_size.x / 2.0f - mic_text_size / 2) - (10 + sfRectangleShape_getSize(data->checkbox).x / 2),
-    window_size.y / 3.5f
+    window_size.y / 4.5f
   });
 
   sfRectangleShape_setFillColor(data->checkbox, sfRed);
   sfRectangleShape_setSize(data->checkbox, (sfVector2f) { 15, 15 });
   sfRectangleShape_setPosition(data->checkbox, (sfVector2f) {
     sfText_getPosition(data->mic_text).x + mic_text_size + 10,
-    window_size.y / 3.5f + 7
+    sfText_getPosition(data->mic_text).y + 7
   });
 
   sfRectangleShape_setFillColor(data->btn, sfColor_fromRGB(35, 35, 35));
   sfRectangleShape_setSize(data->btn, (sfVector2f) { sfRenderWindow_getSize(gWindow).x / 3.0f, 45 });
   sfRectangleShape_setPosition(data->btn, (sfVector2f) {
     window_size.x / 2.0f - sfRectangleShape_getSize(data->btn).x / 2.0f,
-    window_size.y / 2.0f
+    window_size.y / 1.5f
   });
 
   sfText_setFont(data->btn_text, gFont);
@@ -96,7 +108,7 @@ ui_scene_settings_t* ui_scene_settings_create()
 
   sfText_setPosition(data->btn_text, (sfVector2f) {
     window_size.x / 2.0f - btn_text_size / 2,
-      sfRectangleShape_getPosition(data->btn).y + 9
+    sfRectangleShape_getPosition(data->btn).y + 9
   });
 
   scene->bg_color = sfBlack;
@@ -118,6 +130,10 @@ void ui_scene_settings_show(ui_scene_settings_t* scene)
   sfRenderWindow_drawRectangleShape(gWindow, data->checkbox, NULL);
   sfRenderWindow_drawRectangleShape(gWindow, data->btn, NULL);
   sfRenderWindow_drawText(gWindow, data->btn_text, NULL);
+  if (gUse_microphone)
+  {
+    ui_slider_draw(data->slider);
+  }
 }
 
 void ui_scene_settings_handleEvent(ui_scene_settings_t* scene)
@@ -160,6 +176,8 @@ void ui_scene_settings_handleEvent(ui_scene_settings_t* scene)
   {
     sfRectangleShape_setFillColor(data->btn, sfColor_fromRGB(50, 50, 50));
   }
+
+  ui_slider_handleEvent(data->slider);
 }
 
 void ui_scene_settings_destroy(ui_scene_settings_t* scene)
@@ -170,6 +188,7 @@ void ui_scene_settings_destroy(ui_scene_settings_t* scene)
   sfText_destroy(data->btn_text);
   sfRectangleShape_destroy(data->checkbox);
   sfRectangleShape_destroy(data->btn);
+  ui_slider_destroy(data->slider);
   free(data);
   free(scene);
 }

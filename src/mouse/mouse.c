@@ -1,8 +1,25 @@
 #include "mouse.h"
-#include "util.h"
 #include <stdlib.h>
 #include <math.h>
 #include <float.h>
+
+static int collision_pintri(sfVector2f p, sfVector2f a, sfVector2f b, sfVector2f c)
+{
+  float d1 = (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
+  float d2 = (p.x - c.x) * (b.y - c.y) - (b.x - c.x) * (p.y - c.y);
+  float d3 = (p.x - a.x) * (c.y - a.y) - (c.x - a.x) * (p.y - a.y);
+  return (d1 >= 0 && d2 >= 0 && d3 >= 0) || (d1 <= 0 && d2 <= 0 && d3 <= 0);
+}
+
+static int collision_pinarea(sfVector2f p, sfVertexArray* area)
+{
+  sfVector2f v0_pos = sfVertexArray_getVertex(area, 0)->position;
+  sfVector2f v1_pos = sfVertexArray_getVertex(area, 1)->position;
+  sfVector2f v2_pos = sfVertexArray_getVertex(area, 2)->position;
+  sfVector2f v3_pos = sfVertexArray_getVertex(area, 3)->position;
+
+  return (int)(collision_pintri(p, v0_pos, v1_pos, v2_pos) || collision_pintri(p, v2_pos, v3_pos, v0_pos));
+}
 
 bongo_mouse* bongo_mouse_create()
 {
@@ -73,7 +90,7 @@ void bongo_mouse_handleMove(bongo_mouse* mouse)
 
   bongo_sprite_setPosition(mouse->base, new_pos.x, new_pos.y);
 
-  int is_in_area = bongo_collision_pinarea(new_pos, mouse->area);
+  int is_in_area = collision_pinarea(new_pos, mouse->area);
   if (!is_in_area)
   {
     sfVector2f nearest = new_pos;

@@ -7,7 +7,8 @@ sfEvent gEvent;
 sfClock* gClock;
 ui_scenesManager* gSc_manager;
 
-unsigned int gUse_microphone;
+unsigned int gUse_microphone = 0;
+unsigned int gThreshold = 100;
 
 int main(void)
 {
@@ -38,8 +39,6 @@ int main(void)
     return 1;
   }
   ui_scenesManager_setCurrentScene(gSc_manager, UI_SCENE_SETTINGS);
-
-  gUse_microphone = 0;
 
   gClock = sfClock_create();
   if (!gClock)

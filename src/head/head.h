@@ -15,6 +15,18 @@
 #endif
 
 extern unsigned int gUse_microphone;
+extern unsigned int gThreshold;
+
+typedef struct
+{
+#if defined (_WIN32)
+  volatile LONG voice_detected;
+  volatile LONG threshold;
+#else
+  atomic_uint voice_detected;
+  atomic_uint threshold;
+#endif
+} mic_thrd_data;
 
 typedef struct
 {
@@ -23,12 +35,8 @@ typedef struct
   bongo_sprite* base;
   bongo_texture* texture_mic;
 
+  mic_thrd_data thrd_data;
   sfSoundRecorder* recorder;
-#if defined (_WIN32)
-  volatile LONG voice_detected;
-#else
-  atomic_uint voice_detected;
-#endif
 } bongo_head;
 
 bongo_head* bongo_head_create();
